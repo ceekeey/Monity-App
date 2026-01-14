@@ -71,6 +71,49 @@ export default function Activities() {
         }
     };
 
+    const deleteExpense = async (id) => {
+        Alert.alert(
+            "Delete Expense",
+            "Are you sure you want to delete this item?",
+            [
+                { text: "Cancel", style: "cancel" },
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            const token = await SecureStore.getItemAsync('userToken');
+
+                            const res = await fetch(
+                                `http://192.168.42.46:5002/api/expensive/delete/${id}`,
+                                {
+                                    method: 'DELETE',
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                        'Content-Type': 'application/json',
+                                    },
+                                }
+                            );
+
+                            const data = await res.json();
+                            console.log("Delete response:", data);
+                            if (!res.ok) {
+                                throw new Error(data.message || "Delete failed");
+                            }
+
+                            // 🔄 Refetch activities after delete
+                            fetchActivities();
+                        } catch (error) {
+                            console.error("Delete error:", error);
+                            Alert.alert("Error", "Could not delete expense");
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
+
     // 1. Prepare Data for the Chart
     const chartData = {
         labels: ["Income", "Expenses"],
@@ -208,15 +251,30 @@ export default function Activities() {
                                     {new Date(item.date || item.createdAt).toLocaleDateString()}
                                 </Text>
                             </View>
-                            <Text style={[
-                                styles.amount,
-                                { color: item.type === 'expense' ? COLORS.error : COLORS.secondary },
-                            ]}>
-                                {item.type === 'expense' ? '-' : '+'} ₦
-                                {Math.abs(item.amount).toLocaleString()}
-                            </Text>
+
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                <Text
+                                    style={[
+                                        styles.amount,
+                                        { color: item.type === 'expense' ? COLORS.error : COLORS.secondary },
+                                    ]}
+                                >
+                                    {item.type === 'expense' ? '-' : '+'} ₦
+                                    {Math.abs(item.amount).toLocaleString()}
+                                </Text>
+
+                                {/* 🗑 Delete Icon */}
+                                <Pressable onPress={() => deleteExpense(item._id)}>
+                                    <Ionicons
+                                        name="trash-outline"
+                                        size={22}
+                                        color={COLORS.error}
+                                    />
+                                </Pressable>
+                            </View>
                         </View>
                     )}
+
                 />
             )}
         </View>
