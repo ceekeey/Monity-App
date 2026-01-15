@@ -33,7 +33,7 @@ export default function Home() {
 
             if (userData) setUser(JSON.parse(userData));
 
-            const response = await fetch('https://monity.ceekeey.name.ng/api/expensive/all', {
+            const response = await fetch('https://monity-api.onrender.com/api/expensive/all', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'

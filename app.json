@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "Monity",
+    "jsEngine": "hermes",
     "slug": "Monity",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -20,7 +21,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.ceekeey.Monity"
+      "package": "com.ceekeey.Monity",
+      "enableProguardInReleaseBuilds": true
     },
     "web": {
       "output": "static",

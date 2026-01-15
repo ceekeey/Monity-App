@@ -1,35 +1,33 @@
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { useEffect, useState } from 'react'; // Added useEffect
+import { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     Image,
     Pressable,
     StyleSheet,
     Text,
     TextInput,
-    View
+    View,
 } from 'react-native';
 import {
     heightPercentageToDP as hp,
     widthPercentageToDP as wp,
 } from 'react-native-responsive-screen';
+import Toast from 'react-native-toast-message';
 import { COLORS } from '../theme';
 
-const API_URL = "https://monity.ceekeey.name.ng/api/auth";
+const API_URL = "https://monity-api.onrender.com/api/auth";
 
 export default function Auth() {
     const [mode, setMode] = useState('login');
     const [loading, setLoading] = useState(false);
-    const [checkingAuth, setCheckingAuth] = useState(true); // Added loading state for check
+    const [checkingAuth, setCheckingAuth] = useState(true);
 
-    // Form States
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
-    // 1. Check if user is already logged in when this screen mounts
     useEffect(() => {
         const checkExistingAuth = async () => {
             const token = await SecureStore.getItemAsync('userToken');
@@ -44,15 +42,20 @@ export default function Auth() {
 
     const handleSubmit = async () => {
         if (!username || !password || (mode === 'register' && !email)) {
-            Alert.alert("Error", "Please fill in all fields");
+            Toast.show({
+                type: 'error',
+                text1: 'Missing fields',
+                text2: 'Please fill in all required fields',
+            });
             return;
         }
 
         setLoading(true);
         const endpoint = mode === 'login' ? '/login' : '/register';
-        const payload = mode === 'login'
-            ? { username, password }
-            : { username, email, password };
+        const payload =
+            mode === 'login'
+                ? { username, password }
+                : { username, email, password };
 
         try {
             const response = await fetch(`${API_URL}${endpoint}`, {
@@ -66,19 +69,35 @@ export default function Auth() {
             if (response.ok) {
                 await SecureStore.setItemAsync('userToken', data.token);
                 await SecureStore.setItemAsync('userData', JSON.stringify(data.user));
-                router.replace('/(tabs)');
+
+                Toast.show({
+                    type: 'success',
+                    text1: mode === 'login' ? 'Welcome back 👋' : 'Account created 🎉',
+                    text2: 'Redirecting...',
+                });
+
+                setTimeout(() => {
+                    router.replace('/(tabs)');
+                }, 800);
             } else {
-                Alert.alert("Failed", data.error || "Something went wrong");
+                Toast.show({
+                    type: 'error',
+                    text1: 'Authentication failed',
+                    text2: data.error || 'Invalid credentials',
+                });
             }
         } catch (error) {
-            Alert.alert("Network Error", "Could not connect to server.");
+            Toast.show({
+                type: 'error',
+                text1: 'Network error',
+                text2: 'Could not connect to server',
+            });
             console.error(error);
         } finally {
             setLoading(false);
         }
     };
 
-    // 2. Show spinner while checking SecureStore
     if (checkingAuth) {
         return (
             <View style={[styles.container, { justifyContent: 'center' }]}>
@@ -89,11 +108,19 @@ export default function Auth() {
 
     return (
         <View style={styles.container}>
-            <Image source={require('../../assets/images/auth.png')} style={styles.image} resizeMode="contain" />
+            <Image
+                source={require('../../assets/images/auth.png')}
+                style={styles.image}
+                resizeMode="contain"
+            />
 
-            <Text style={styles.title}>{mode === 'login' ? 'Welcome Back' : 'Create Account'}</Text>
+            <Text style={styles.title}>
+                {mode === 'login' ? 'Welcome Back' : 'Create Account'}
+            </Text>
             <Text style={styles.subtitle}>
-                {mode === 'login' ? 'Login to manage your finances' : 'Start tracking your expenses today'}
+                {mode === 'login'
+                    ? 'Login to manage your finances'
+                    : 'Start tracking your expenses today'}
             </Text>
 
             <View style={styles.form}>
@@ -135,14 +162,18 @@ export default function Auth() {
                     {loading ? (
                         <ActivityIndicator color={COLORS.text} />
                     ) : (
-                        <Text style={styles.buttonText}>{mode === 'login' ? 'Login' : 'Register'}</Text>
+                        <Text style={styles.buttonText}>
+                            {mode === 'login' ? 'Login' : 'Register'}
+                        </Text>
                     )}
                 </Pressable>
             </View>
 
             <Pressable onPress={() => setMode(mode === 'login' ? 'register' : 'login')}>
                 <Text style={styles.toggleText}>
-                    {mode === 'login' ? "Don't have an account? Register" : 'Already have an account? Login'}
+                    {mode === 'login'
+                        ? "Don't have an account? Register"
+                        : 'Already have an account? Login'}
                 </Text>
             </Pressable>
         </View>

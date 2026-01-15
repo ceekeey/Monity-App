@@ -12,6 +12,7 @@ import {
     View,
 } from 'react-native';
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from 'react-native-responsive-screen';
+import Toast from 'react-native-toast-message';
 import { COLORS } from './theme';
 
 export default function EditProfile() {
@@ -63,12 +64,16 @@ export default function EditProfile() {
 
     const handleSave = async () => {
         if (!token) {
-            alert("Session expired. Please log in again.");
+            Toast.show({
+                type: 'error',
+                text1: 'Session expired',
+                text2: 'Please log in again.',
+            });
             return;
         }
 
         try {
-            const res = await fetch("https://monity.ceekeey.name.ng/api/user/profile", { // Ensure port matches Home screen (5002)
+            const res = await fetch("https://monity-api.onrender.com/api/user/profile", { // Ensure port matches Home screen (5002)
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -91,10 +96,17 @@ export default function EditProfile() {
                 JSON.stringify(data.user)
             );
 
-            alert("Profile updated!");
+            Toast.show({
+                type: 'success',
+                text1: 'Profile updated!',
+            });
             router.back();
         } catch (err) {
-            alert(err.message);
+            Toast.show({
+                type: 'error',
+                text1: 'Update failed',
+                text2: err.message,
+            });
         }
     };
 

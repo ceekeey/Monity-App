@@ -54,7 +54,7 @@ export default function Activities() {
         setLoading(true);
         try {
             const token = await SecureStore.getItemAsync('userToken');
-            const response = await fetch('https://monity.ceekeey.name.ng/api/expensive/all', {
+            const response = await fetch('https://monity-api.onrender.com/api/expensive/all', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -85,7 +85,7 @@ export default function Activities() {
                             const token = await SecureStore.getItemAsync('userToken');
 
                             const res = await fetch(
-                                `http://192.168.42.46:5002/api/expensive/delete/${id}`,
+                                `https://monity-api.onrender.com/api/expensive/delete/${id}`,
                                 {
                                     method: 'DELETE',
                                     headers: {

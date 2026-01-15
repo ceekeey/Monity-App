@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
 import { ExpenseProvider } from './context/ExpenseContext';
 import { COLORS } from './theme';
 
@@ -27,6 +28,7 @@ export default function RootLayout() {
               options={{ presentation: 'modal' }}
             />
           </Stack>
+          <Toast />
         </SafeAreaView>
       </ExpenseProvider>
     </SafeAreaProvider>

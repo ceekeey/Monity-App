@@ -1,10 +1,11 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import * as SecureStore from 'expo-secure-store'; // 1. Import SecureStore
-import { ActivityIndicator, Alert } from 'react-native'; // For feedback
+import * as SecureStore from 'expo-secure-store';
+import Toast from 'react-native-toast-message';
 
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
+    ActivityIndicator,
     Platform,
     Pressable,
     StyleSheet,
@@ -12,6 +13,7 @@ import {
     TextInput,
     View,
 } from 'react-native';
+
 import { heightPercentageToDP as hp, widthPercentageToDP as wp } from 'react-native-responsive-screen';
 import { useExpenses } from './context/ExpenseContext';
 import { COLORS } from './theme';
@@ -23,55 +25,72 @@ export default function AddExpense() {
     const [type, setType] = useState('expense'); // expense | income
     const [title, setTitle] = useState('');
     const [amount, setAmount] = useState('');
-    const [category, setCategory] = useState('General');
+    const [category, setCategory] = useState('work');
     const [date, setDate] = useState(new Date());
     const [showDate, setShowDate] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
-    const [isSaving, setIsSaving] = useState(false); // Add loading state
+    const categories = ['work', 'school', 'hobby', 'other'];
 
     const handleSave = async () => {
         if (!title || !amount) {
-            Alert.alert("Missing Info", "Please provide a title and amount");
+            Toast.show({
+                type: 'error',
+                text1: 'Missing Info',
+                text2: 'Please provide a title and amount',
+            });
             return;
         }
 
         setIsSaving(true);
 
         try {
-            // 2. Get the token for authorization
             const token = await SecureStore.getItemAsync('userToken');
 
-            // 3. Prepare the payload exactly as your API expects
-            // Note: Your API example shows amount as a string "800000"
             const payload = {
-                title: title,
+                title,
                 amount: amount.toString(),
-                type: type, // "income" or "expense" (matches your enum)
-                date: date.toISOString(), // Standard date format
+                type,
+                category,
+                date: date.toISOString(),
             };
 
-            // 4. Send to your local API
-            const response = await fetch('https://monity.ceekeey.name.ng/api/expensive/add', {
+            const response = await fetch('https://monity-api.onrender.com/api/expensive/add', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` // Include the token
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify(payload),
             });
 
             const data = await response.json();
+            console.log('API response:', data);
 
             if (response.ok) {
-                // 5. Update local context if needed
                 addExpense(data);
+
+                Toast.show({
+                    type: 'success',
+                    text1: 'Saved',
+                    text2: `${type === 'expense' ? 'Expense' : 'Income'} added successfully`,
+                });
+
                 router.back();
             } else {
-                Alert.alert("Error", data.message || "Failed to save transaction");
+                Toast.show({
+                    type: 'error',
+                    text1: 'Error',
+                    text2: data.message || 'Failed to save transaction',
+                });
             }
         } catch (err) {
             console.log('API error:', err);
-            Alert.alert("Network Error", "Check if your server is running");
+            Toast.show({
+                type: 'error',
+                text1: 'Network Error',
+                text2: 'Check if your server is running',
+            });
         } finally {
             setIsSaving(false);
         }
@@ -90,20 +109,14 @@ export default function AddExpense() {
             {/* TYPE SWITCH */}
             <View style={styles.switch}>
                 <Pressable
-                    style={[
-                        styles.switchBtn,
-                        type === 'expense' && styles.activeExpense,
-                    ]}
+                    style={[styles.switchBtn, type === 'expense' && styles.activeExpense]}
                     onPress={() => setType('expense')}
                 >
                     <Text style={styles.switchText}>Expense</Text>
                 </Pressable>
 
                 <Pressable
-                    style={[
-                        styles.switchBtn,
-                        type === 'income' && styles.activeIncome,
-                    ]}
+                    style={[styles.switchBtn, type === 'income' && styles.activeIncome]}
                     onPress={() => setType('income')}
                 >
                     <Text style={styles.switchText}>Income</Text>
@@ -129,22 +142,32 @@ export default function AddExpense() {
                     onChangeText={setAmount}
                 />
 
-                <TextInput
-                    placeholder="Category"
-                    placeholderTextColor={COLORS.muted}
-                    style={styles.input}
-                    value={category}
-                    onChangeText={setCategory}
-                />
+                {/* CATEGORY SELECTOR */}
+                <View style={styles.categoryWrap}>
+                    {categories.map((item) => (
+                        <Pressable
+                            key={item}
+                            onPress={() => setCategory(item)}
+                            style={[
+                                styles.categoryChip,
+                                category === item && styles.categoryActive,
+                            ]}
+                        >
+                            <Text
+                                style={[
+                                    styles.categoryText,
+                                    category === item && styles.categoryTextActive,
+                                ]}
+                            >
+                                {item.toUpperCase()}
+                            </Text>
+                        </Pressable>
+                    ))}
+                </View>
 
                 {/* DATE PICKER */}
-                <Pressable
-                    style={styles.dateBtn}
-                    onPress={() => setShowDate(true)}
-                >
-                    <Text style={styles.dateText}>
-                        {date.toDateString()}
-                    </Text>
+                <Pressable style={styles.dateBtn} onPress={() => setShowDate(true)}>
+                    <Text style={styles.dateText}>{date.toDateString()}</Text>
                 </Pressable>
 
                 {showDate && (
@@ -176,8 +199,6 @@ export default function AddExpense() {
         </View>
     );
 }
-
-
 
 const styles = StyleSheet.create({
     container: {
@@ -219,19 +240,6 @@ const styles = StyleSheet.create({
         fontSize: wp('4%'),
     },
 
-    button: {
-        backgroundColor: COLORS.primary,
-        paddingVertical: hp('2%'),
-        borderRadius: 14,
-        alignItems: 'center',
-        marginTop: hp('2%'),
-    },
-
-    buttonText: {
-        color: COLORS.text,
-        fontSize: wp('4.5%'),
-        fontWeight: '600',
-    },
     switch: {
         flexDirection: 'row',
         backgroundColor: COLORS.surface,
@@ -259,6 +267,34 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
 
+    categoryWrap: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 10,
+        marginBottom: hp('2%'),
+    },
+
+    categoryChip: {
+        paddingVertical: hp('1.2%'),
+        paddingHorizontal: wp('4%'),
+        borderRadius: 20,
+        backgroundColor: COLORS.surface,
+    },
+
+    categoryActive: {
+        backgroundColor: COLORS.primary,
+    },
+
+    categoryText: {
+        color: COLORS.muted,
+        fontSize: wp('3.5%'),
+        fontWeight: '600',
+    },
+
+    categoryTextActive: {
+        color: COLORS.text,
+    },
+
     dateBtn: {
         backgroundColor: COLORS.surface,
         paddingVertical: hp('1.8%'),
@@ -271,4 +307,17 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
 
+    button: {
+        backgroundColor: COLORS.primary,
+        paddingVertical: hp('2%'),
+        borderRadius: 14,
+        alignItems: 'center',
+        marginTop: hp('2%'),
+    },
+
+    buttonText: {
+        color: COLORS.text,
+        fontSize: wp('4.5%'),
+        fontWeight: '600',
+    },
 });
